@@ -1,3 +1,2 @@
 # BigQuery-StandardSQL
-BigQuery - Query Library 
-actual project/host/company information removed
+BigQuery - Query Library <br> actual project/host/company information removed
