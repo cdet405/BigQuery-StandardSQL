@@ -11,7 +11,7 @@ WITH modata AS(
          WHEN m.state = 'draft' AND move_type = 'output' THEN mo.quantity 
          ELSE -99999 -- to quickly stop problem 
     END as openQty,
-    mo.create_date,
+    DATE(DATETIME(mo.create_date,'EST')) mo_create_date,
     mo.effective_date,
     mo.state mo_state,
     CASE WHEN mo.priority = '0' THEN 'Highest'
