@@ -5,7 +5,7 @@ SELECT
        WHEN company_id = 3 THEN 'CompanyNameB'
        WHEN company_id = 4 THEN 'CompanyNameC'
        WHEN company_id = 5 THEN 'CompanyNameD'
-       WHEN company_id = 6 THEN 'CompanyNameE. '
+       WHEN company_id = 6 THEN 'CompanyNameE'
        ELSE CONCAT('ERR:[CTE=so][CASE=OOB{id=',company_id,'}]')
   END AS company_name,
   order_number,
