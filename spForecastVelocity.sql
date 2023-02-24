@@ -19,13 +19,13 @@ IF rd = td AND grd = td THEN RETURN; END IF;
   -- proposed ending isoweek
   SET ew = EXTRACT(ISOWEEK FROM CURRENT_DATE() + INTERVAL 13 WEEK);
   -- starting period for forecast
-  SET sp = (SELECT DISTINCT weekPeriod FROM `REDACTED_PROJECT.REDACTED_HOST.forecastVelocityStg` WHERE weekNum = cw );
+  SET sp = (SELECT DISTINCT weekPeriod FROM `REDACTED_PROJECT.REDACTED_HOST.forecastVelocityStg` WHERE weekNum = cw AND active = TRUE);
   -- array of total period options available
-  SET rawfpa = (SELECT ARRAY_AGG(DISTINCT weekPeriod ORDER BY weekPeriod ASC) FROM `REDACTED_PROJECT.REDACTED_HOST.forecastVelocityStg` );
+  SET rawfpa = (SELECT ARRAY_AGG(DISTINCT weekPeriod ORDER BY weekPeriod ASC) FROM `REDACTED_PROJECT.REDACTED_HOST.forecastVelocityStg` WHERE active = TRUE );
   -- ending period for forecast, if proposed ending week is not available choose furthest available
-  SET ep = IFNULL((SELECT DISTINCT weekPeriod FROM `REDACTED_PROJECT.REDACTED_HOST.forecastVelocityStg` WHERE weekNum   = ew ),(SELECT ARRAY_REVERSE(rawfpa)[OFFSET(0)]));
+  SET ep = IFNULL((SELECT DISTINCT weekPeriod FROM `REDACTED_PROJECT.REDACTED_HOST.forecastVelocityStg` WHERE weekNum   = ew AND active = TRUE ),(SELECT ARRAY_REVERSE(rawfpa)[OFFSET(0)]));
   -- resize forecast period array
-  SET ffpa = (SELECT ARRAY_AGG(DISTINCT weekPeriod ORDER BY weekPeriod ASC) FROM `REDACTED_PROJECT.REDACTED_HOST.forecastVelocityStg` WHERE weekPeriod BETWEEN sp AND ep);
+  SET ffpa = (SELECT ARRAY_AGG(DISTINCT weekPeriod ORDER BY weekPeriod ASC) FROM `REDACTED_PROJECT.REDACTED_HOST.forecastVelocityStg` WHERE active = TRUE AND weekPeriod BETWEEN sp AND ep);
   -- number of weeks selected
   SET w = (SELECT ARRAY_LENGTH(ffpa)-1);
   -- number of days selected
