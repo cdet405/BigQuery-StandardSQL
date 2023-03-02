@@ -1,3 +1,4 @@
+-- 20230302 BUG: primaryProduct join breaks when <1 SO's in 1 CS because rsc<>rsc in this scenario
 -- Shipping Cost Analysis Data
 WITH s AS(
   SELECT
