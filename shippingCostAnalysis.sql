@@ -1,4 +1,8 @@
--- 20230302 BUG: primaryProduct join breaks when <1 SO's in 1 CS because rsc<>rsc in this scenario
+-- **Last Edit Revisions DESC**
+-- added channel_name
+-- Changes to spp & primaryProduct Null handling
+-- added shipping refunds
+-- ############################
 -- Shipping Cost Analysis Data
 WITH s AS(
   SELECT
@@ -66,7 +70,7 @@ spp AS(
    MAX(amount) OVER (PARTITION BY order_number) maxAmount,
   FROM so
   WHERE product_code != 'Shipping' AND amount > 0
-  ) WHERE amount = maxAmount 
+  )  
 ),
 -- Search for orders where shipping was refunded. 
 rs AS(
@@ -97,6 +101,14 @@ rs AS(
     shippingCharged+IFNULL(refundedShipping,0) shippingCharged
    FROM sot
    LEFT JOIN rs USING (order_number)
+ ),
+ -- Pull channel name from so CTE
+ chnl AS(
+   SELECT 
+     DISTINCT
+       order_number,
+       channel_name
+    FROM so
  ),
 -- Base main report
  stg AS(
@@ -132,7 +144,16 @@ ORDER BY shipped_date DESC
 -- adds primary product
 SELECT stg.*, 
 spp.product_code primaryProduct,
-IFNULL(spp.product_variant_name,'CS Zero Dollar Order') primaryProductName, 
-spp.amount primaryProductAmount
+IFNULL(
+  spp.product_variant_name,
+  CASE WHEN TotalOrderAmt = 0  THEN 'CS Zero Dollar Order'
+       WHEN (TotalOrderAmt - shippingCharged <=0) THEN 'Sample Order | orderValue=$0 + Shipping >$0'
+       WHEN TotalOrderAmt > 0 THEN 'Unresolved - primaryProduct is on separate CS, or CS contains >1 SO' 
+       ELSE 'ERR:[action=break][FROM:spp|IN:stg][type=OOB][message=couldnt_resolve]' 
+  END 
+) primaryProductName, 
+spp.amount primaryProductAmount,
+chnl.channel_name
 FROM stg
 LEFT JOIN spp ON (spp.order_number = stg.order_number AND spp.src = stg.rsc)
+LEFT JOIN chnl ON chnl.order_number = stg.order_number
