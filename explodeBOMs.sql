@@ -1,3 +1,4 @@
+CREATE OR REPLACE PROCEDURE `REDACTED_PROJECT.REDACTED_HOST.spExplodeBOM`()
 -- Explodes All Levels of the Build of Material Table & Stores Records in a new table
 BEGIN
   -- Declare and Set Variables for Exit Critera 
@@ -44,8 +45,9 @@ IF rd = td THEN RETURN; END IF;
       topSkuBotF BOOLEAN OPTIONS(description= 'Build on the Fly Flag of Top Most Sku'),
       topBomName STRING OPTIONS(description= 'Top Most Bom Name'),
       topBomID INT64 OPTIONS(description= 'Unique record Id of the top most BOM.'),
+      sequence INT64 OPTIONS(description= 'Sequence of BOM, BOM sortOrder Ten Based, 10 is dominate, 20 secondary, etc'),
       ts DATE DEFAULT CURRENT_DATE() OPTIONS(description= 'date recorded')   
-    ) OPTIONS(description= 'Table Contains all Levels of a BOM, only contains/considers BOMs that were active on the date equal to column ts. (ORDER BY topSku, level, output) ');
+    ) OPTIONS(description= 'Table Contains all Levels of a BOM, only contains/considers BOMs that were active on the date equal to column ts. (ORDER BY topSku, sequence, level, output) ');
 
     -- Insert Results to Fresh Table
     INSERT INTO `REDACTED_PROJECT.REDACTED_HOST.explodedBOM`
@@ -61,7 +63,8 @@ IF rd = td THEN RETURN; END IF;
       topSku, 
       topSkuBotF,
       topBomName, 
-      topBomID
+      topBomID,
+      sequence
     )
     
    -- Explode Boms Using 'Recursive With' Loop
@@ -111,9 +114,18 @@ IF rd = td THEN RETURN; END IF;
       topSku, 
       topSkuBotF, 
       topBomName,
-      topBomID
+      topBomID,
+      sequence
     FROM RPL
-    ORDER BY topSku, level, output;
+    -- Appends Bom Sequence  
+    LEFT JOIN (
+      SELECT
+        b.bom_id,
+        b.sequence
+      FROM `REDACTED_PROJECT.REDACTED_HOST.products`
+      ,UNNEST(boms) b
+    ) q ON q.bom_id = topBomID
+    ORDER BY topSku, sequence, level, output;
     
 
 END;
