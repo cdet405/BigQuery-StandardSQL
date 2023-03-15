@@ -78,6 +78,7 @@ SET xb = FORMAT(
       WHERE active = true 
       ) iu ON iu.code = boom.input
     WHERE topSkuBotF = true
+      AND (boom.sequence IS NULL OR boom.sequence = 10) 
   ) xx ON xx.topSku = product_code
 GROUP BY product_code, input, quantity, month, UoM, d_uom, p_uom, s_uom, order_date)
 """
