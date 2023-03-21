@@ -59,7 +59,7 @@ CREATE OR REPLACE TABLE FUNCTION `PROJECT.HOST.velocity`(d INT64, w ARRAY<STRING
         WHERE active = true 
         ) iu ON iu.code = boom.input
        WHERE topSkuBotF IN UNNEST(HOST.string_to_bool_array(w))
-	    AND REGEXP_CONTAINS(topBomName, r'(^|[^\d.])([1-9]\d*|\b0)\.[0-9]+$|^([1-9]\d*|\b0)\.0+$') = FALSE
+	    AND(boom.sequence IS NULL OR boom.sequence = 10)
     ) xx ON xx.topSku = product_code
   GROUP BY product_code, input, quantity, UoM, d_uom, p_uom, s_uom,tot, itot
   ), 
