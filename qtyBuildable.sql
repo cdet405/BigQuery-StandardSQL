@@ -1,4 +1,5 @@
--- qtyBuildable v2
+-- qtyBuildable v2.1
+-- grab explodedBom data
 WITH xb AS(
   SELECT
     boom.topBomID,
@@ -19,6 +20,7 @@ WITH xb AS(
     IFNULL(boom.sequence,10) sequence
   FROM `REDACTED_PROJECT.REDACTED_HOST.explodedBOM` boom
 ),
+-- fetch product default uom
 p AS(
   SELECT
     code,
@@ -28,6 +30,7 @@ p AS(
     active,
   FROM `REDACTED_PROJECT.REDACTED_HOST.products`
 ),
+-- grab local inventory
 i AS(
   SELECT
     product_code,
@@ -36,8 +39,9 @@ i AS(
     quantity_on_hand qtyOH,
     quantity_available qtyAvail
   FROM `REDACTED_PROJECT.REDACTED_HOST.inventory_current`
-  WHERE (warehouse LIKE '%HQ%' OR warehouse_code = 'TMP') -- maybe add tmp?
+  WHERE warehouse_code IN('WH','VFS HQ','TMP') -- tmp in there for svryStock
 ),
+-- sum iventory by product
 pi AS(
   SELECT
     product_code,
@@ -46,6 +50,7 @@ pi AS(
     FROM i
     GROUP BY product_code
 ),
+-- filtered to only inputs
 ii AS(
   SELECT 
     pi.*
@@ -57,6 +62,7 @@ ii AS(
     FROM xb
   ) 
 ),
+-- filtered to only outputs
 oi AS(
   SELECT 
     pi.*
@@ -68,6 +74,7 @@ oi AS(
     FROM xb
   ) 
 ),
+-- filtered to only topSkus
 ti AS(
   SELECT 
     pi.*
@@ -79,6 +86,7 @@ ti AS(
     FROM xb
   ) 
 ),
+-- stg1 qtyBuildable Calc
 bi AS(
   SELECT
    sequence,
@@ -105,6 +113,7 @@ bi AS(
   LEFT JOIN oi ON oi.product_code = output
   LEFT JOIN ti ON ti.product_code = topsku
 ),
+-- actual line level buildable count
 qbb as (
   SELECT 
     bi.*, 
@@ -130,11 +139,35 @@ qbb as (
               AND b2.topBomID = bi.topBomID 
               AND b2.sequence = bi.sequence
           )+ bi.o_totQtyAvail
-        ) WHEN quantity_buildable_source = 'quantity_available' THEN bi.qb ELSE 999999 END -- 999999 to catch error
+        ) WHEN quantity_buildable_source = 'quantity_available' THEN bi.qb ELSE 0 END 
       ), 
       0
     ) as qtyBuildable 
   from 
     bi
+),
+-- buildable by topBom (maximum able to build)
+tqb AS(
+  SELECT -- add sequence?
+    qbb.topBomID,
+    MIN(IFNULL(qtyBuildable,0)) minTop
+  FROM qbb
+  GROUP BY topBomID
+),
+-- buildable by levelOutputs (maximum able to build)
+oqb AS(
+  SELECT -- add sequence?
+    qbb.BomID,
+    MIN(IFNULL(qtyBuildable,0)) minOut
+  FROM qbb
+  GROUP BY BomID
 ) 
-SELECT * FROM qbb 
+-- final report
+SELECT 
+  qbb.*, -- add sequence?
+  tqb.minTop,
+  oqb.minOut
+FROM qbb
+LEFT JOIN tqb USING (topBomID)
+LEFT JOIN oqb USING (bomID)
+ORDER BY sequence, topSku, level
