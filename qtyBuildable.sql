@@ -148,26 +148,28 @@ qbb as (
 ),
 -- buildable by topBom (maximum able to build)
 tqb AS(
-  SELECT -- add sequence?
+  SELECT
+    qbb.sequence,
     qbb.topBomID,
     MIN(IFNULL(qtyBuildable,0)) minTop
   FROM qbb
-  GROUP BY topBomID
+  GROUP BY sequence,topBomID
 ),
 -- buildable by levelOutputs (maximum able to build)
 oqb AS(
-  SELECT -- add sequence?
+  SELECT
+    qbb.sequence,
     qbb.BomID,
     MIN(IFNULL(qtyBuildable,0)) minOut
   FROM qbb
-  GROUP BY BomID
+  GROUP BY sequence,BomID
 ) 
 -- final report
 SELECT 
-  qbb.*, -- add sequence?
+  qbb.*, 
   tqb.minTop,
   oqb.minOut
 FROM qbb
-LEFT JOIN tqb USING (topBomID)
-LEFT JOIN oqb USING (bomID)
+LEFT JOIN tqb USING (sequence,topBomID)
+LEFT JOIN oqb USING (sequence,bomID)
 ORDER BY sequence, topSku, level
