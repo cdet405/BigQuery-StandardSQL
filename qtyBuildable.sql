@@ -1,5 +1,6 @@
 -- qtyBuildable v2.1
 -- grab explodedBom data
+-- troubleshoot tb#2121
 WITH xb AS(
   SELECT
     boom.topBomID,
