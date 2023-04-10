@@ -88,7 +88,7 @@ s AS(
   quantity,
   order_date
   FROM `project.dataset.sales_orders` s, UNNEST(lines) l
-  WHERE order_date >= '2022-12-15'
+  WHERE order_date >= '2023-01-01'
    AND l.line_type = 'sale' 
     AND s.state IN(
 		'processing', 
@@ -261,7 +261,7 @@ INNER JOIN dcp
 WHERE 
   dd.days > 1 
    AND 
-    dd.dateRecorded >= '2023-01-01'
+    dd.dateRecorded >= '2023-01-14' -- because join based on dayofyear counter 
 ORDER BY
   product, 
   dateRecorded ASC
