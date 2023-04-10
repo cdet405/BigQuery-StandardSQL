@@ -4,6 +4,10 @@
 -- ^ will require fix to snapshot query + fix existing records
 -- Need to decide how to treat component list prices
 -- once product (ap) becomes base, inner joins need to be left.
+-- NULLs in list look to be components or no sales hist. 
+--  >could maybe grab from inventorymoves/product but idk on how kosher those values are.
+-- Investigate: If BOTF does not have (built/finished) inventory but was buildable (components AV) sku may not exist in inventoryCurrent?
+-- which would be an issue, those records would need appened at the specific date, which would also be rough. 
 -- **********************************************************
 -- fetch inventory data from snapshot log
 WITH snap AS(
@@ -84,7 +88,7 @@ s AS(
   quantity,
   order_date
   FROM `project.dataset.sales_orders` s, UNNEST(lines) l
-  WHERE order_date >= '2023-01-01'
+  WHERE order_date >= '2022-12-15'
    AND l.line_type = 'sale' 
     AND s.state IN(
 		'processing', 
@@ -257,7 +261,7 @@ INNER JOIN dcp
 WHERE 
   dd.days > 1 
    AND 
-    dd.dateRecorded >= '2023-01-14'
+    dd.dateRecorded >= '2023-01-01'
 ORDER BY
   product, 
   dateRecorded ASC
