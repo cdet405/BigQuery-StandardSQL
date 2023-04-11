@@ -36,11 +36,14 @@ cso AS(
     ) ordersPlaced 
   FROM 
     `project.dataset.sales_orders` 
-    LEFT JOIN UNNEST(lines) l 
+    ,UNNEST(lines) l 
   WHERE 
     (
       l.line_type = 'sale' 
-      OR l.line_type IS NULL
+      AND l.warehouse_name LIKE '%HQ%' 
+      AND product_name != 'Shipping'
+      AND l.fulfil_strategy = 'ship'
+      AND l.quantity > 0
     ) 
     AND state NOT IN(
       'draft', 
@@ -49,14 +52,6 @@ cso AS(
       'ignored'
     ) 
     AND order_date >= '2022-11-01' 
-    AND (
-      l.warehouse_name LIKE '%HQ%' 
-      AND product_code != 'Shipping'
-    ) 
-    AND (
-      l.quantity > 0 
-      OR l.quantity IS NULL
-    ) 
     AND channel_name NOT LIKE '%Intercompany Transfer' 
   GROUP BY 
     company_id, 
