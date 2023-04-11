@@ -5,11 +5,13 @@
 -- Need to decide how to treat component list prices
 -- once product (ap) becomes base, inner joins need to be left.
 -- NULLs in list look to be components or no sales hist. 
---  >could maybe grab from inventorymoves/product but idk on how kosher those values are.
+-- >could maybe grab from inventorymoves/product but idk on how kosher those values are.
+-- >> 'fixed' in concept model messyListFix.sql (finds MAX parent list) <- not sure if thats ideal..
 -- Investigate: If BOTF does not have (built/finished) inventory but was buildable (components AV) sku may not exist in inventoryCurrent?
 -- which would be an issue, those records would need appened at the specific date, which would also be rough. 
 -- **********************************************************
--- fetch inventory data from snapshot log
+
+-- fetch records from snapshot
 WITH snap AS(
   SELECT
     company_name,
@@ -23,7 +25,7 @@ WITH snap AS(
    AND dateRecorded >= '2023-01-01'
    AND qtyOH + qtyAvail > 0
 ),
--- group records
+-- group snap records
 gr AS(
   SELECT
     dateRecorded,
@@ -35,7 +37,7 @@ gr AS(
     dateRecorded,
     product
 ),
--- window'd partitions
+-- window'd partitions on dateRecorded
 nxt AS(
   SELECT
     product,
@@ -88,12 +90,8 @@ s AS(
   quantity,
   order_date
   FROM `project.dataset.sales_orders` s, UNNEST(lines) l
-  WHERE order_date >= '2023-01-01'
-   AND l.line_type = 'sale' 
-    AND s.state IN(
-		'processing', 
-		'done'
-	)
+  WHERE order_date >= '2022-12-15'
+  AND l.line_type = 'sale' AND s.state IN('processing', 'done')
   -- AND channel_name LIKE '%Shopify%'
 ),
 -- max unit price by product from sales
@@ -108,25 +106,27 @@ sl AS(
 -- Sum Sales + Generate daynum
 ss AS(
   SELECT 
-  product_code,
-  SUM(quantity) tot,
-  EXTRACT(DAYOFYEAR FROM order_date) dn
+    product_code,
+    SUM(quantity) tot,
+    order_date dn
   FROM s 
   WHERE product_code != 'Shipping'
-  GROUP BY product_code, dn 
+  GROUP BY 
+  product_code, 
+  dn 
 ),
 -- Fetch Exploded BOM Data & make it math
 xb AS(
   SELECT 
-  product_code,
-  input,
-  quantity,
-  tot,
-  tot * dataset.convert_uom(
-	  quantity,
-	  UoM,
-	  d_uom
-  ) itot, --quantity itot --
+    product_code,
+    input,
+    quantity,
+    tot,
+    tot * dataset.convert_uom(
+      quantity,
+      UoM,
+      d_uom
+    ) itot, --quantity itot --
   dn
   FROM ss
   LEFT JOIN(
@@ -147,7 +147,7 @@ xb AS(
       FROM `project.dataset.products` 
       WHERE active = true 
       ) iu ON iu.code = boom.input
-    --WHERE (topSkuBotF = true AND BotF = true) -- << Both top and level BotF for forecast | Commented out for full velocity
+     --WHERE (topSkuBotF = true AND BotF = true) -- << Both top and level BotF for forecast | Commented out for full velocity
      --AND (sequence IS NULL OR sequence = 10)
     WHERE (sequence IS NULL OR sequence = 10) -- only respects default bom
   ) xx ON xx.topSku = product_code
@@ -206,33 +206,24 @@ shf AS(
 SELECT 
   dd.product,
   dd.dateRecorded,
-  ROUND(
-    SAFE_DIVIDE(
-      (
-        SELECT 
-          SUM(qty) 
-        FROM shf 
-        WHERE 
-          shf.product_code = dd.product 
-           AND(
-             dn <= EXTRACT(
-              DAYOFYEAR 
-              FROM 
-              dd.dateRecorded
-              ) 
-             AND 
-                dn >= EXTRACT(
-                  DAYOFYEAR 
-                  FROM 
-                  dd.dateRecorded
-                )
-             -14
-            )
-        ),
-     14
-    )
-   ,2
-  ) AS prev14DA,
+ROUND(
+  SAFE_DIVIDE(
+    (
+      SELECT 
+        SUM(qty) 
+      FROM 
+        shf 
+      WHERE 
+        shf.product_code = dd.product 
+        AND(
+          dn <= dd.dateRecorded 
+          AND dn >= dd.dateRecorded - INTERVAL 14 DAY
+        )
+    ), 
+    14
+  ), 
+  2
+) AS prev14DA,
   dd.OH,
   dd.AV,
   dd.nextDate,
@@ -252,16 +243,21 @@ FROM dd
 LEFT JOIN sl ON sl.product_code = dd.product
 INNER JOIN gr 
   ON(
-    dd.product = gr.product AND dd.nextDate = gr.dateRecorded
+    dd.product = gr.product 
+    AND 
+    dd.nextDate = gr.dateRecorded
   )
 INNER JOIN dcp 
   ON(
-    dd.product = dcp.product AND dd.dateRecorded = dcp.dateRecorded
+    dd.product = dcp.product 
+    AND 
+    dd.dateRecorded = dcp.dateRecorded
   )
 WHERE 
-  dd.days > 1 
+  dd.days > 1 -- only stockout scenarios are >1
    AND 
-    dd.dateRecorded >= '2023-01-14' -- because join based on dayofyear counter 
+    dd.dateRecorded >= '2023-01-01'
 ORDER BY
   product, 
   dateRecorded ASC
+
