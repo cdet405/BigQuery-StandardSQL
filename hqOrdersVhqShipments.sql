@@ -23,6 +23,7 @@ WITH csc AS(
 cso AS(
   SELECT 
     company_id, 
+    channel_name,
     FORMAT_DATETIME(
       '%F', 
       DATETIME(
@@ -54,11 +55,13 @@ cso AS(
     AND order_date >= '2022-11-01' 
     AND channel_name NOT LIKE '%Intercompany Transfer' 
   GROUP BY 
-    company_id, 
+    company_id,
+    channel_name,
     confirmation_date 
   ORDER BY 
     confirmation_date DESC, 
-    company_id ASC
+    company_id ASC,
+    channel_name ASC
 ) 
 SELECT 
   CASE WHEN cso.company_id = 2 THEN 'name1' 
@@ -71,7 +74,8 @@ SELECT
       cso.company_id,
       '}undefined]'
     ) 
-  END company_name, 
+  END company_name,
+  cso.channel_name,
   cso.confirmation_date date, 
   cso.ordersPlaced, 
   IFNULL(
