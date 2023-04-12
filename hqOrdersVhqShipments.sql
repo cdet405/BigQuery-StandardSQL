@@ -1,7 +1,8 @@
 -- orders vs shipments by day
 WITH csc AS(
   SELECT  
-    company_id,
+    s.company_id,
+    so.channel_name,
     shipped_date,
     COUNT(
       DISTINCT 
@@ -12,9 +13,11 @@ WITH csc AS(
       s.number
     ) distinctShipments
   FROM `project.dataset.shipments` s, UNNEST(moves) m
+  INNER JOIN `project.dataset.sales_orders` so ON so.order_id = m.order_id
   WHERE warehouse_type = 'operated'
   GROUP BY 
     company_id, 
+    channel_name,
     shipped_date
   ORDER BY 
     shipped_date DESC,
@@ -91,6 +94,7 @@ FROM
   LEFT JOIN 
     csc 
       ON csc.company_id = cso.company_id 
+       AND csc.channel_name = cso.channel_name
         AND DATE(csc.shipped_date) = DATE(cso.confirmation_date) 
 ORDER BY 
   date DESC, 
