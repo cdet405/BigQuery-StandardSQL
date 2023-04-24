@@ -1,3 +1,6 @@
+/*
+this will need updated when schema changes to include outliers / seasonal index / iso year? 
+*/
 -- data source for forecast accuracy scorecard
 WITH fh AS(
   SELECT
