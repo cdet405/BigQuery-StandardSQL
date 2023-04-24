@@ -1,9 +1,10 @@
 ###################################################################################
-### **** | Safety Stock Report | Method Five | version 4   2022-12-20 CD | **** ###
+### **** | Safety Stock Report | Method Five | version 5   2023-04-24 CD | **** ###
 ###################################################################################
  ### **** BEFORE EXECUTING | CHECK CALL & CTE QUERY PARAMS | ENABLE CALLS **** ###
 ###################################################################################
 # Revision Log
+ # version 5 - Hard code LT & DSD Cap (currently used bc no good way to obtain/calc leadtimes w/ current data)
  # version 4 -Created CALL to Explode BOMs & Reconciled All CALLs to be inside of l3mv()
  # version 4 -Added explode bom and only calc BotF converting to d_uom in (sql2>xb) replaces (sql2>iso(>so)>bom(>uom))
  # version 4 -Updated bom CTE to use explodedBom Table
@@ -512,7 +513,11 @@ bom AS(
 SELECT DISTINCT
 ss.*,
 ROUND(SAFE_MULTIPLY(Z,SQRT((SAFE_MULTIPLY(averageLead,POWER(DSD_PA,2))+POWER(SAFE_MULTIPLY(salesAvgMonth, SDLTMonth),2))))) safetyStock, 
-ROUND(SAFE_MULTIPLY(Z,SQRT((SAFE_MULTIPLY(averageLead,POWER(DSD_PA,2))+POWER(SAFE_MULTIPLY(salesAvgMonth, SDLTMonth),2))))+(salesAvgMonth/30.5)*averageLead) reorderPoint
+-- cap added - hardcode LT & second segma capped at 60day
+ROUND(SAFE_MULTIPLY(Z,SQRT((SAFE_MULTIPLY(IF(averageLead BETWEEN 10 AND 30,averageLead,30.5),IF(POWER(DSD_PA,2)>nda*60,nda*60,POWER(DSD_PA,2)))+POWER(SAFE_MULTIPLY(salesAvgMonth, .22),2))))) safetyStock_mod, 
+ROUND(SAFE_MULTIPLY(Z,SQRT((SAFE_MULTIPLY(averageLead,POWER(DSD_PA,2))+POWER(SAFE_MULTIPLY(salesAvgMonth, SDLTMonth),2))))+(salesAvgMonth/30.5)*averageLead) reorderPoint,
+-- cap added - hardcode LT & second segma capped at 60day
+ROUND(SAFE_MULTIPLY(Z,SQRT((SAFE_MULTIPLY(IF(averageLead BETWEEN 10 AND 30,averageLead,30.5),IF(POWER(DSD_PA,2)>nda*60,nda*60,POWER(DSD_PA,2)))+POWER(SAFE_MULTIPLY(salesAvgMonth, .22),2))))+(salesAvgMonth/30.5)*IF(averageLead BETWEEN 10 AND 30,averageLead,30.5)) reorderPoint_mod
 FROM ss
 
 
