@@ -45,7 +45,10 @@ cso AS(
     (
       l.line_type = 'sale' 
       AND l.warehouse_name LIKE '%HQ%' 
-      AND product_name != 'Shipping'
+      AND REGEXP_CONTAINS(
+        product_code, 
+        r"^(?i)(shipping|ship)"
+        )=false
       AND l.fulfil_strategy = 'ship'
       AND l.quantity > 0
     ) 
