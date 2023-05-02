@@ -48,13 +48,13 @@ with t as(
 select 
   category_name, 
   company_id, 
-  CASE WHEN company_id = 1 THEN 'companyName1'
-       WHEN company_id = 2 THEN 'companyName2'
-       WHEN company_id = 3 THEN 'companyName3'
-       WHEN company_id = 4 THEN 'companyName4'
-       WHEN company_id = 5 THEN 'companyName5'
-       WHEN company_id = 6 THEN 'companyName6'
-       WHEN company_id = 8 THEN 'companyName8' 
+  case when company_id = 1 then 'companyName1'
+       when company_id = 2 then 'companyName2'
+       when company_id = 3 then 'companyName3'
+       when company_id = 4 then 'companyName4'
+       when company_id = 5 then 'companyName5'
+       when company_id = 6 then 'companyName6'
+       when company_id = 8 then 'companyName8' 
        else null end as company_name
 from t;
 
