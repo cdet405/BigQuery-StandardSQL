@@ -1,3 +1,5 @@
+-- //TODO try to get this into datastudio to make charts on sku velocity
+-- > may require changing pivot DF alias? 20230502cd
 -- MoM Product Demand Sales 
 WITH so AS(
 SELECT 
