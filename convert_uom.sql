@@ -20,6 +20,8 @@ CREATE OR REPLACE FUNCTION `REDACTED_PROJECT.REDACTED_HOST.convert_uom`(value FL
          WHEN from_unit = 'Pound'    AND to_unit = 'Kilogram' THEN  value * 0.453592
          WHEN from_unit = 'Yard'     AND to_unit = 'Meter'    THEN  value * 0.9144
          WHEN from_unit = 'Meter'    AND to_unit = 'Yard'     THEN  value * 1.09361
+         WHEN from_unit = 'Cup'      AND to_unit = 'Gallon'   THEN  value * 0.625
+         WHEN from_unit = 'Gallon'   AND to_unit = 'Cup'      THEN  value * 16
          ELSE value -- changed from ELSE NULL to not completely miss qty if OOB
      END
 );
