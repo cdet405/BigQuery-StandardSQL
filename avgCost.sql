@@ -1,6 +1,6 @@
----------------------------------------
-# ** 20230504_CD avgCost version 1 ** #
----------------------------------------
+------------------------------------------
+# ** 20230504_CD avgCost version 1.01 ** #
+------------------------------------------
 -- fetch all po cost lines
 with poc as(
   select
@@ -240,6 +240,15 @@ mac as(
     and db.company_id=fp.company_id
   )
 ),
+-- bom_id to output key
+obi as(
+  select 
+  b.id bom_id, 
+  o.product_code output,
+  o.output_uom_name 
+from  `PROJECT.DATASET.production_boms` b
+,unnest(outputs) o
+),
 -- bom inputs avg cost conversion
 bi as(
   select 
@@ -273,41 +282,73 @@ left join mac on (
 )
 where active=true
 order by bom_id, input
-) 
+),
 -- *reminder priority2 cost is static and not index'd to d_uom. risk of miscalc*
 -- complete avg bom cost with data integrity score: score = % of bom child data accounted for.
 -- if score < 1 avgBomCost is under valued. orphans=count of sku per bom missing in calc
-select 
-  bom_id, 
-  round(
-    sum(
-      icost
-    ),
-   2
-  ) bomCost, 
-  count(bom_id) cntChild, 
-  countif(
-    ifnull(
-      icost,
-      0
-    )
-   >0
-  ) cntOrphanChild,  
-  safe_divide(
+bc as(
+  select 
+    bom_id, 
+    round(
+      sum(
+        icost
+      ),
+     2
+    ) bomCost, 
+    count(bom_id) cntChild, 
     countif(
       ifnull(
         icost,
         0
       )
-     >0
-    ), 
-    count(bom_id)
-  ) integrity,
-  concat(
-    'https://SUBDOMAIN.DOMAIN.TLD/client/#/model/MODEL.NAME/',
-    bom_id,
-    '?views=%5B%5B1072,%22tree%22%5D,%5B1073,%22form%22%5D%5D&context=%7B%22active_test%22:false%7D'
-  ) link
-from bi 
-group by bom_id 
-order by bom_id
+     =0
+    ) cntOrphanChild,  
+    safe_divide(
+      countif(
+        ifnull(
+          icost,
+          0
+        )
+       =0
+      ), 
+      count(bom_id)
+    ) integrity,
+    concat(
+      'https://SUBDOMAIN.DOMAIN.TLD/client/#/model/MODELNAME/',
+      bom_id,
+      '?views=%5B%5B1072,%22tree%22%5D,%5B1073,%22form%22%5D%5D&context=%7B%22active_test%22:false%7D'
+    ) link
+  from bi 
+  group by bom_id 
+  order by bom_id
+),
+-- output sku cost
+oc as(
+  select
+    obi.bom_id,
+    obi.output,
+    obi.output_uom_name,
+    bc.* except(bom_id)
+  from obi
+  left join bc using (bom_id)
+)
+-- final result
+select
+  mac.*,
+  oc.bomCost,
+  oc.integrity,
+  cc.company_id key_id,
+  round(
+    coalesce(
+      oc.bomCost,
+      mac.avgCost,
+      mac.bcost,
+      mac.ff_cost
+    ),
+   2
+  ) new_avg_cost
+from mac
+left join oc on oc.output=mac.code
+left join cc on cc.code=mac.code
+where mac.company_id=cc.company_id
+order by key_id, code
