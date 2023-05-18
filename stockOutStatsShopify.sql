@@ -1,13 +1,14 @@
 -- shopify stock out stats
 with ss as(
-  select 
+  select
+    site, 
     vid, 
     sku,
     runDate,
     price, 
     available 
-  from `project.datsset.shopifyScrape`
-  where site not like 's%s'
+  from `project.dataset.shopifyScrape`
+  where site not like 's%dd%s'
 ),
 -- average retail
 ar as(
@@ -38,6 +39,7 @@ dv as(
 -- lag dates
 lg as(
   select
+    site,
     vid,
     runDate,
     available,
@@ -89,6 +91,7 @@ sg as(
   from s
   group by 1,2
 ),
+-- first transform layer
 pre as(
   select 
     dv.sku,  
@@ -100,6 +103,7 @@ pre as(
   where ifnull(dd,0)>1 
   order by 1,3 asc
 ),
+-- second transform layer
 mid as (
   select 
     pre.*,
@@ -128,16 +132,23 @@ mid as (
     ) Lratio
   from pre
 ) 
+-- final report
 select
- *,
- round(
+ site,
+ sku,
+ vid variant_id,
+ runDate sold_out_on,
+ nxt next_date_instock,
+ dd days_out,
+ avgRetail avg_list_price,
+ prev14DA pre_stock_out_daily_average_14d,
+round(
    (
-     (
-       dd*prev14DA
-      )-- *Lratio #removed (already ratio'd bc its a DA)
-    )*avgRetail,
-   2
- ) missedRev
+    dd*prev14DA
+    )
+  *avgRetail,
+  2
+ ) potential_missed_revenue
 from mid 
 order by 2,3
 
