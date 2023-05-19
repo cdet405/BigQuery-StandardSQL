@@ -48,12 +48,12 @@ SET build = FORMAT(
   UPDATE `PROJECT.DATASET.forecastVelocity`
   SET pd = NULL
 WHERE 1=1;
-CALL `PROJECT.DATASET.spForecastVelocity`();
   """
 );
 
 EXECUTE IMMEDIATE deactivate;
 EXECUTE IMMEDIATE import;
 EXECUTE IMMEDIATE build;
+CALL `PROJECT.DATASET.spForecastVelocity`();
 
 END;
