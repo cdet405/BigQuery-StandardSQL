@@ -4,7 +4,7 @@ merge gorgSurvey p
 using (
 	select 
 	  * 
-	from gorgSurvey 
+	from gorgSurveyStg 
 	where load_date = current_date()
 ) s
 on (
