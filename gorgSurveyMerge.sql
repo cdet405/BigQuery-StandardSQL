@@ -11,20 +11,29 @@ on (
 	p.id=s.id and 
 	p.customer_id = s.customer_id
 )
-when matched then
-update set
-	p.ticket_id = s.ticket_id,
-	p.sent_datetime = s.sent_datetime,
-	p.scored_datetime = s.scored_datetime,
-	p.meta = s.meta,
-	p.score = s.score,
-	p.customer_id = s.customer_id,
-	p.created_datetime = s.created_datetime,
-	p.uri = s.uri,
-	p.body_text = s.body_text,
-	p.should_send_datetime = s.should_send_datetime,
-	p.id = s.id
-	--p.load_date = s.load_date -- these will never match potentially causing wasted resource on updating ts if nothing truely changed 
+when matched and(
+	(
+		p.sent_datetime != s.sent_datetime
+	) or(
+		p.scored_datetime != s.scored_datetime
+	) or(
+		p.should_send_datetime != s.should_send_datetime
+	)
+) 
+then
+  update 
+	  set
+	    p.ticket_id = s.ticket_id,
+	    p.sent_datetime = s.sent_datetime,
+	    p.scored_datetime = s.scored_datetime,
+	    p.meta = s.meta,
+	    p.score = s.score,
+	    p.customer_id = s.customer_id,
+	    p.created_datetime = s.created_datetime,
+	    p.uri = s.uri,
+	    p.body_text = s.body_text,
+	    p.should_send_datetime = s.should_send_datetime,
+	    p.id = s.id
 when not matched then
   insert(
 	  ticket_id,
