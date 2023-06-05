@@ -33,7 +33,8 @@ then
 	    p.uri = s.uri,
 	    p.body_text = s.body_text,
 	    p.should_send_datetime = s.should_send_datetime,
-	    p.id = s.id
+	    p.id = s.id,
+	    p.mod_date = current_date()
 when not matched then
   insert(
 	  ticket_id,
