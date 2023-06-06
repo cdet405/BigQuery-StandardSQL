@@ -1,6 +1,8 @@
 /* 
 A BLESSING IN DISGUISE, THIS DOESNT WORK.
-WORKING ON SOLUTION. 20230606CD
+WORKING ON SOLUTION. 
+Invalid value: Invalid schema update. Cannot add fields (field: string_field_0) at [47:1]
+20230606CD
 */
 
 
