@@ -1,7 +1,16 @@
+/* 
+A BLESSING IN DISGUISE, THIS DOESNT WORK.
+WORKING ON SOLUTION. 20230606CD
+*/
+
+
 -- phase one ticket ingest 
 -- theres gotta be a better way
 -- //TODO: figure out a better way to do this
 
+-- commenting out not safe to run
+
+/*
 create or replace table manifest.gtt1(
   opened_datetime timestamp,
   priority string,
@@ -43,3 +52,6 @@ create or replace table manifest.gtt1(
   mod_ts timestamp default null options(description="ts row modifified (prob wont be used)")
 )
 options(description=("gtt-ph1-transform"))
+
+
+*/
