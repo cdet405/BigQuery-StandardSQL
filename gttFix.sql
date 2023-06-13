@@ -27,15 +27,13 @@ select
   if(from_agent>0,true,false) as from_agent_new
 from manifest.gorgTicket;
 
--- wipe out records to avoid datatype conflict
-update manifest.gorgTicket 
-set from_agent = null
-where true;
-
--- correct columns datatype
+-- drop bad column
 alter table manifest.gorgTicket
-alter column from_agent
-set data type bool; 
+drop column from_agent;
+
+-- recreate column with correct datatype
+alter table manifest.gorgTicket
+add column from_agent bool;
 
 -- replace deleted records with copy
 merge manifest.gorgTicket p  
