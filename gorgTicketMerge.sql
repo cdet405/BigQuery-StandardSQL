@@ -3,7 +3,7 @@
 ---------------------------------------------------
 merge manifest.pdtest3 p -- //todo: update table names to prod & stg
 using manifest.pdtest2 s -- //todo: update table names to prod & stg
-on pd.id = s.id 
+on p.id = s.id 
 when 
   matched 
     and(
