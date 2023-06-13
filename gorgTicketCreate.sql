@@ -1,7 +1,8 @@
 -- formerly pdtest3
--- schema is the same for the stg table except mod_ts is dropped
+-- updated from gttFix.sql
+-- now 1:1 with stg
 
-CREATE TABLE manifest.gorgTicket
+CREATE TABLE `chaddata-359115.manifest.gorgTicket`
 (
   id INT64,
   uri STRING,
@@ -11,12 +12,11 @@ CREATE TABLE manifest.gorgTicket
   priority STRING,
   channel STRING,
   via STRING,
-  from_agent FLOAT64,
-  customer STRING, -- json string
-  assignee_user STRING, -- json string
-  assignee_team STRING, -- json string
+  customer STRING,
+  assignee_user STRING,
+  assignee_team STRING,
   subject STRING,
-  tags STRING, -- json string
+  tags STRING,
   is_unread BOOL,
   spam BOOL,
   created_datetime TIMESTAMP,
@@ -27,10 +27,11 @@ CREATE TABLE manifest.gorgTicket
   closed_datetime TIMESTAMP,
   snooze_datetime STRING,
   trashed_datetime TIMESTAMP,
-  integrations STRING, -- json string
+  integrations STRING,
   messages_count INT64,
   load_ts DATETIME DEFAULT current_datetime('America/New_York'),
-  mod_ts DATETIME DEFAULT null -- this column doesnt exist in stg version
+  mod_ts DATETIME DEFAULT null,
+  from_agent BOOL
 )
 OPTIONS(
   expiration_timestamp=TIMESTAMP ""2033-06-09T18:06:19.364Z""
