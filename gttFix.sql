@@ -37,7 +37,7 @@ add column from_agent bool;
 
 -- replace deleted records with copy
 merge manifest.gorgTicket p  
-using manigest.tmpgtt t 
+using manifest.tmpgtt t 
 on p.id = t.id
 when matched then 
   update set
