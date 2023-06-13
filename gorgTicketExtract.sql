@@ -31,7 +31,7 @@ SELECT
   ARRAY_AGG(integration_address) integration_address,
   ARRAY_AGG(tag_name) tag_names
 FROM 
-  manifest.pdtest3
+  manifest.gorgTicket
   CROSS JOIN UNNEST([customer]) AS customer
   CROSS JOIN UNNEST([assignee_user]) as assignee_user
   CROSS JOIN UNNEST([assignee_team]) as assignee_team
@@ -40,6 +40,6 @@ FROM
   CROSS JOIN UNNEST(JSON_EXTRACT_ARRAY(integrations, '$')) AS integration
   CROSS JOIN UNNEST([JSON_EXTRACT_SCALAR(integration, '$.name')]) AS integration_name
   CROSS JOIN UNNEST([JSON_EXTRACT_SCALAR(integration, '$.address')]) AS integration_address 
-WHERE id=228852813
+  -- WHERE id=228852813
 GROUP BY 
   1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27
