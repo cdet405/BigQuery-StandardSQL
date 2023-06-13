@@ -12,11 +12,11 @@ CREATE TABLE `chaddata-359115.manifest.gorgTicket`
   priority STRING,
   channel STRING,
   via STRING,
-  customer STRING,
-  assignee_user STRING,
-  assignee_team STRING,
+  customer STRING,  --json string
+  assignee_user STRING,  --json string
+  assignee_team STRING,   --json string
   subject STRING,
-  tags STRING,
+  tags STRING,   --json string
   is_unread BOOL,
   spam BOOL,
   created_datetime TIMESTAMP,
