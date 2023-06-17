@@ -279,7 +279,7 @@ begin
   execute immediate fileToTable;
   execute immediate response;
   execute immediate retireCurrentStage;
-  execute immediate stage;
+  execute immediate stageRefresh;
   execute immediate resetpd;
   execute immediate purgeProdGroup;
   execute immediate purgeProd;
