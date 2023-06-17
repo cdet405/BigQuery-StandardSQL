@@ -1,9 +1,9 @@
 -- creates table from raw forecast file, then merges created table to stage,
 -- then calls procedure to merge stage and prod 
-create or replace procedure `myproject.manifest.spRoboWriteForecast`(fileName STRING, fileType STRING)
+create or replace procedure `myproject.manifest.spRoboWriteForecast`(fileName string, fileType string)
 begin
   -- create variables 
-  declare response, retireCurrentStage, fileToTable, resetpd, uts, t, f, uris, location, stage string;
+  declare response, retireCurrentStage, fileToTable, resetpd, uts, t, f, uris, location, stageRefresh string;
   set uts = concat(
     "_",
     cast(
@@ -73,7 +73,7 @@ begin
     where active = true;
     """
   );
-  set stage = format(
+  set stageRefresh = format(
     """
     insert into `myproject.manifest.forecastVelocityStg`(
       company_name,
@@ -100,7 +100,7 @@ begin
       cL confidencyLevel,
       LTM26 previousActual,
       sync_id sid
-  FROM %s
+  from %s
     """,
     location
   );
@@ -114,7 +114,7 @@ begin
   execute immediate fileToTable;
   execute immediate response;
   execute immediate retireCurrentStage;
-  execute immediate stage;
+  execute immediate stageRefresh;
   execute immediate resetpd; 
   -- merges stage to prod
   call `myproject.manifest.spForecastVelocity`();
