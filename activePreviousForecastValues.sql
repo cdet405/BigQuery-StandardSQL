@@ -3,7 +3,7 @@
 WITH fh AS(
   SELECT
     *, 
-    row_number() 
+    ROW_NUMBER() 
       OVER (
         PARTITION BY 
           product_code,
