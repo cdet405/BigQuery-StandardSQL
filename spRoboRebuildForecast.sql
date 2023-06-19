@@ -2,7 +2,7 @@
 create or replace procedure `myproject.manifest.spRoboRebuildForecast`(fileName STRING, fileType STRING)
 begin
   -- create variables 
-  declare response, retireCurrentStage, fileToTable, resetpd, uts, t, f, uris, location, stageRefresh, m, purgeProdGroup, purgeProd, rebuildProd, rebuildProdGroup string;
+  declare response, retireCurrentStage, fileToTable, resetpd, uts, t, f, ft, param,  uris, location, stageRefresh, m, purgeProdGroup, purgeProd, rebuildProd, rebuildProdGroup string;
   declare rawfpa, ffpa array<int64>;
   declare cw, ew, sp, ep, d, w int64;
   set uts = concat(
@@ -14,6 +14,14 @@ begin
       ) 
       as string
     )
+  );
+  set ft = fileType;
+  set param = if(
+    lower(
+      ft
+    ) = 'csv',
+    "skip_leading_rows = 1,",
+    ""
   );
   set t = fileName;
   set f = fileName;
@@ -59,12 +67,13 @@ begin
     load data into %s
     from files (
       format = '%s',
-      skip_leading_rows = 1,
+      %s
       uris = ['%s']
     );
     """,
     location,
     fileType,
+    param,
     uris
   );
   set retireCurrentStage = format(
