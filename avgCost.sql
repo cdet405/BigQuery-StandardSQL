@@ -1,5 +1,5 @@
 ------------------------------------------
-# ** 20230504_CD avgCost version 1.01 ** #
+# ** 20230620_CD avgCost    version 6 ** #
 ------------------------------------------
 -- fetch all po cost lines
 with poc as(
@@ -19,7 +19,7 @@ with poc as(
     l.unit_price,
     l.uom_name,
     l.line_type
-  from `PROJECT.DATASET.purchase_orders` po
+  from `project.dataset.purchase_orders` po
   ,unnest(lines) l
   where l.line_type='purchase'
 ),
@@ -40,7 +40,7 @@ ai as(
     l.purchase_line_id,
     company_id,
     company_name
-  from `PROJECT.DATASET.account_invoices` i
+  from `project.dataset.account_invoices` i
   ,unnest(lines) l 
   where l.type='sale' 
   and invoice_type='in' 
@@ -60,7 +60,7 @@ p as(
     c.company_name,
     c.company_id,
     c.currency_code
-  from `PROJECT.DATASET.products`
+  from `project.dataset.products`
    left join unnest(costs) c 
    --where  c.costing_method != 'fixed'
 ),
@@ -152,6 +152,22 @@ pc as(
     and cost > 0
   )
 ),
+-- bom sequence
+seq as(
+  select
+    code,
+    variant_name,
+    pb.bom_name,
+    ifnull(pb.bom_name,variant_name) name,
+    b.bom_id,
+    ifnull(
+      b.sequence,
+      10
+    ) sequence
+  from `project.dataset.products`
+  left join unnest(boms) b
+  left join `project.dataset.production_boms` pb on pb.id = b.bom_id
+),
 -- resolve company_ids
 cc as(
   select
@@ -170,7 +186,7 @@ cc as(
       company_id 
     from ai
   ) ii on ii.product_code=p.code
-  left join `PROJECT.DATASET.categorytocompany` c2c using (category_name)
+  left join `project.dataset.categorytocompany` c2c using (category_name)
 ),
 -- bring in beachys standard cost 
 -- ** if value is not at d_uom calc will be off 
@@ -181,7 +197,7 @@ db as(
     company_id,
     code,
     beach_cost_price
-  from `PROJECT.DATASET.cogs`
+  from `project.dataset.cogs`
   where beach_cost_price > 0
 ),
 -- po to default conversion
@@ -190,24 +206,28 @@ d AS(
 select 
   poc.*,
   p.d_uom,
-  FN_ROUTINE.convert_uom(1,uom_name,d_uom) conversion
+  dataset.convert_uom(1,uom_name,d_uom) conversion
 from poc  
 inner join p on p.code=poc.product_code
 ),
 -- po to invoice calc prep for avg
 ip as(
   select 
-  ai.company_id,
-  ai.invoice_id,
-  ai.invoice_date,
-  ai.quantity invoice_qty,
-  ai.unit_price invoice_unit_price,
-  ai.product_code,
-  d.uom_name line_uom,
-  d.d_uom,
-  d.conversion,
-  safe_divide(ai.unit_price,d.conversion) d_unit_price,
-  d.po_num
+    ai.company_id,
+    ai.invoice_id,
+    ai.invoice_date,
+    ai.quantity invoice_qty,
+    ai.unit_price invoice_unit_price,
+    ai.product_code,
+    d.uom_name line_uom,
+    d.d_uom,
+    d.conversion,
+    safe_divide(
+      ai.unit_price,
+      d.conversion
+    ) d_unit_price,
+    d.po_num,
+
   from ai 
   inner join d on d.lid=ai.purchase_line_id
 ),
@@ -223,13 +243,14 @@ ac as(
 ),
 -- merged avg cost dataset for coalesce
 mac as(
-  select distinct
-  fp.company_id,
-  fp.code,
-  ac.avgCost, -- priority 1 in coalesce
-  db.beach_cost_price bcost, -- priority 2 in coalesce
-  fp.cost ff_cost, -- priority 3 in coalesce
-  fp.d_uom
+  select 
+   distinct
+    fp.company_id,
+    fp.code,
+    ac.avgCost, -- priority 1 in coalesce
+    db.beach_cost_price bcost, -- priority 2 in coalesce
+    fp.cost ff_cost, -- priority 3 in coalesce
+    fp.d_uom
   from funpiv fp
   left join ac on (
     ac.product_code=fp.code 
@@ -243,52 +264,55 @@ mac as(
 -- bom_id to output key
 obi as(
   select 
-  b.id bom_id, 
-  o.product_code output,
-  o.output_uom_name 
-from  `PROJECT.DATASET.production_boms` b
-,unnest(outputs) o
+    b.id bom_id, 
+    o.product_code output,
+    o.output_uom_name 
+  from  `project.dataset.production_boms` b
+  ,unnest(outputs) o
 ),
 -- bom inputs avg cost conversion
 bi as(
   select 
-  b.id bom_id,
-  i.product_code input,
-  i.quantity,
-  i.input_uom_name,
-  cc.company_id,
-  mac.d_uom,
-  safe_multiply(
-    FN_ROUTINE.convert_uom(
-      i.quantity,
-      i.input_uom_name,
-      mac.d_uom
-    ),
-    coalesce(
-      mac.avgCost, -- priority 1 value
-      mac.bcost,  --  priority 2 value
-      mac.ff_cost -- priority 3 value
-    )
-  ) icost,
-  mac.avgCost,
-  mac.bcost,
-  mac.ff_cost
-from `PROJECT.DATASET.production_boms` b
-,unnest(inputs) i
-left join cc on cc.code=i.product_code
-left join mac on (
-  mac.code=i.product_code 
-  and mac.company_id=cc.company_id
-)
-where active=true
-order by bom_id, input
+    b.id bom_id,
+    i.product_code input,
+    i.quantity,
+    i.input_uom_name,
+    cc.company_id,
+    mac.d_uom,
+    safe_multiply(
+      dataset.convert_uom(
+        i.quantity,
+        i.input_uom_name,
+        mac.d_uom
+      ),
+      coalesce(
+        mac.avgCost, -- priority 1 value
+        mac.bcost,  --  priority 2 value
+        mac.ff_cost -- priority 3 value
+      )
+    ) icost,
+    mac.avgCost,
+    mac.bcost,
+    mac.ff_cost
+  from `project.dataset.production_boms` b
+  ,unnest(inputs) i
+  left join cc on cc.code=i.product_code
+  left join mac on (
+    mac.code=i.product_code 
+    and mac.company_id=cc.company_id
+  )
+  where active=true
+  order by 
+    bom_id, 
+    input
 ),
 -- *reminder priority2 cost is static and not index'd to d_uom. risk of miscalc*
 -- complete avg bom cost with data integrity score: score = % of bom child data accounted for.
 -- if score < 1 avgBomCost is under valued. orphans=count of sku per bom missing in calc
 bc as(
   select 
-    bom_id, 
+    bom_id,
+    seq.sequence, 
     round(
       sum(
         icost
@@ -314,13 +338,14 @@ bc as(
       count(bom_id)
     ) integrity,
     concat(
-      'https://SUBDOMAIN.DOMAIN.TLD/client/#/model/MODELNAME/',
+      'https://365-holdings.fulfil.io/client/#/model/production.bom/',
       bom_id,
       '?views=%5B%5B1072,%22tree%22%5D,%5B1073,%22form%22%5D%5D&context=%7B%22active_test%22:false%7D'
     ) link
-  from bi 
-  group by bom_id 
-  order by bom_id
+  from bi
+  inner join seq using (bom_id) 
+  group by 1,2 
+  order by 2,1 asc
 ),
 -- output sku cost
 oc as(
@@ -331,24 +356,54 @@ oc as(
     bc.* except(bom_id)
   from obi
   left join bc using (bom_id)
-)
--- final result
-select
-  mac.*,
-  oc.bomCost,
-  oc.integrity,
-  cc.company_id key_id,
-  round(
-    coalesce(
-      oc.bomCost,
-      mac.avgCost,
-      mac.bcost,
-      mac.ff_cost
-    ),
-   2
-  ) new_avg_cost
-from mac
-left join oc on oc.output=mac.code
-left join cc on cc.code=mac.code
-where mac.company_id=cc.company_id
-order by key_id, code
+),
+-- final cost result
+cost as(
+  select
+    dataset.fnCompany(
+      mac.company_id
+    ) company,
+    mac.code,
+    name.name,
+    oc.bom_id,
+    seq.sequence,
+    mac.avgCost,
+    mac.bcost beachysCost,
+    mac.ff_cost,
+    mac.d_uom,    
+    oc.bomCost,
+    safe_subtract(
+      1,
+      oc.integrity
+    ) integrity,
+    round(
+      coalesce(
+        oc.bomCost,
+        mac.avgCost,
+        mac.bcost,
+        mac.ff_cost
+      ),
+     2
+    ) new_avg_cost
+  from mac
+  left join oc on oc.output=mac.code
+  inner join cc on (cc.code=mac.code and cc.company_id = mac.company_id)
+  left join seq using (bom_id)
+  inner join (
+    select 
+      code,
+      variant_name name
+    from seq
+  ) name on name.code = mac.code
+) 
+select 
+ distinct 
+  * 
+from cost 
+where new_avg_cost > 0
+order by 
+  1 desc,
+  2 asc,
+  3 asc,
+  4 asc
+  
