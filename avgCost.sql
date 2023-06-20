@@ -338,7 +338,7 @@ bc as(
       count(bom_id)
     ) integrity,
     concat(
-      'https://365-holdings.fulfil.io/client/#/model/production.bom/',
+      'https://subdomain.domain.tld/client/#/model/production.bom/',
       bom_id,
       '?views=%5B%5B1072,%22tree%22%5D,%5B1073,%22form%22%5D%5D&context=%7B%22active_test%22:false%7D'
     ) link
@@ -395,6 +395,26 @@ cost as(
       variant_name name
     from seq
   ) name on name.code = mac.code
+  left join (
+    select 
+      bom_id, 
+      string_agg(
+        input,
+        ', '
+      ) badCodes
+    from(
+      select 
+        bom_id,
+        input 
+      from bi 
+      where (
+        icost is null 
+        or icost = 0
+      )
+    )
+    group by 
+      bom_id
+  ) bad on bad.bom_id = oc.bom_id
 ) 
 select 
  distinct 
