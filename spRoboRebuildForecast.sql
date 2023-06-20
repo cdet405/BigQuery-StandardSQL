@@ -285,13 +285,13 @@ begin
     d,
     ffpa
   );
-  execute immediate fileToTable;
-  execute immediate response;
-  execute immediate retireCurrentStage;
-  execute immediate stageRefresh;
-  execute immediate resetpd;
-  execute immediate purgeProdGroup;
-  execute immediate purgeProd;
-  execute immediate rebuildProd;
-  execute immediate rebuildProdGroup;
+  execute immediate fileToTable; -- Creates New Table From Forecast File (CSV/JSON/ARVO/PARQUET).
+  execute immediate response; -- Communicates whether table created is file name, or generated. 
+  execute immediate retireCurrentStage; -- Sets all active stage records inactive.
+  execute immediate stageRefresh; -- inserts new records to stage that are set to active.
+  execute immediate resetpd; -- pd is an exit criteria used by dashboard for scheduled prod updates.
+  execute immediate purgeProdGroup; -- deletes all records in prod grouped table.
+  execute immediate purgeProd; -- deletes all prod records in ungrouped table.
+  execute immediate rebuildProd; -- rebuilds prod table using new stage records.
+  execute immediate rebuildProdGroup; -- rebuilds prod grouped table using new stage records.
 end;
