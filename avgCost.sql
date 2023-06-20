@@ -366,7 +366,10 @@ cost as(
     mac.code,
     name.name,
     oc.bom_id,
-    seq.sequence,
+    ifnull(
+      seq.sequence,
+      1
+    ) sequence,
     mac.avgCost,
     mac.bcost beachysCost,
     mac.ff_cost,
