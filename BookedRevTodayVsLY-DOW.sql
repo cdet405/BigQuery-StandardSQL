@@ -1,5 +1,5 @@
--- ** Old Instance - Obsolete **
--- Created by Chad Detwiler last Rev 2022-09-23
+-- updated for current instance 2023-06-28 CD
+-- Note: Not Enough Data in Current Instance to Work (<1 Year of Data)
 -- ty = Today, ly = the same day of the week last year as ty
 
 DECLARE ty, ly DATE;
@@ -34,14 +34,14 @@ SET
       ) DAY
     )
   );
-WITH br AS(
+WITH aibr AS(
   SELECT 
-    'NAME' Brand, 
+    company_id, 
     invoice_number, 
     invoice_date, 
     SUM(l.amount) amount 
   FROM 
-    `PROJECTID.DATASET-OLD.account_invoices`, 
+    `PROJECT.DATASET.account_invoices`, 
     UNNEST(lines) l 
   WHERE 
     invoice_date IN(ty, ly) 
@@ -49,17 +49,20 @@ WITH br AS(
     AND state IN('paid', 'posted') 
     AND l.quantity > 0 
   GROUP BY 
-    invoice_number, 
-    invoice_date
+    1,
+    2,
+    3
 ) 
 SELECT 
-  Brand, 
+  company_id, 
   invoice_date TYLY_Date, 
   SUM(amount) Revenue 
 FROM 
-  br 
+  aibr 
 GROUP BY
-  Brand, 
-  invoice_date
-
-
+  1,
+  2
+ORDER BY 
+  1 ASC,
+  2 DESC
+;
