@@ -128,7 +128,7 @@ u as(
     tot, 
     week,
     year
-   -- ,'s' dataSource  -- used for debugging
+   -- ,'s(ws)' dataSource  -- used for debugging
   from ss
 ),
 -- fetch product's active field 
