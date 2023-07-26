@@ -1,5 +1,5 @@
 /* 
-2023-07-26 CD version 1
+2023-07-26 CD version 1.01
 pph project - ff base data
 * rough proof of concept model * 
 figure out whether summing etc can be done in DS
@@ -41,6 +41,7 @@ items being parent sku only
 */
 select 
   shipped_date,
+  warehouse_code,
   coalesce(
     picker,
     packer,
@@ -71,8 +72,10 @@ select
 from cs
 group by 
   1,
-  2
+  2,
+  3
 order by 
   1 desc, 
-  2 asc
+  2 asc,
+  3 asc
 ;
