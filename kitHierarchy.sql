@@ -21,7 +21,7 @@ WITH recursive rpl AS (
     `dev_cd.boms` child 
   WHERE 
     parent.childProductID = child.parentProductID 
-    AND parent.level < 20 -- this breaks infinite loops 
+    AND parent.level < 7 -- this breaks infinite loops 
     ), 
   -- calc sublevel
 rpl_with_sublevel AS (
