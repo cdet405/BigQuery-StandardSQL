@@ -197,14 +197,12 @@ begin
   );
   set purgeProdGroup = format(
     """
-    delete `myproject.manifest.forecastVelocityGroup`
-    where 1=1
+    truncate table `myproject.manifest.forecastVelocityGroup`
     """
   );
   set purgeProd = format(
     """
-    delete `myproject.manifest.forecastVelocity`
-    where 1=1
+    truncate table `myproject.manifest.forecastVelocity`
     """
   );
   set rebuildProd = format(
